@@ -1,0 +1,20 @@
+-- Create database if it doesn't exist
+CREATE DATABASE IF NOT EXISTS courier_db;
+
+-- Use the created database
+USE courier_db;
+
+-- Create parcels table if it doesn't exist
+CREATE TABLE IF NOT EXISTS parcels (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_name VARCHAR(255),
+    email VARCHAR(255),
+    whatsapp_number VARCHAR(20),
+    tracking_id VARCHAR(50),
+    status VARCHAR(50)
+);
+
+-- Insert a sample record into parcels table
+INSERT INTO parcels (customer_name, email, whatsapp_number, tracking_id, status)
+VALUES 
+    ('Nishant', 'nishantpandit600@example.com', '+918750747600', 'Z60257302', 'Booked');

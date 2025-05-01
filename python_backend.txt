@@ -1,0 +1,64 @@
+from flask import Flask, request, jsonify
+import mysql.connector
+from twilio.rest import Client
+
+app = Flask(__name__)
+
+# 1. Database Connection
+def connect_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="admin123",  # Your MySQL password here
+        database="courier_db",
+        port=3307  # Correct port (as you changed in MySQL)
+    )
+
+# 2. WhatsApp Notification using Twilio
+def send_whatsapp(to, message):
+    account_sid = 'ACe46a0f2e622997af7f2f916ad155ee81'
+    auth_token = '40a662834df3a043062e8ce34928b9f6'
+    from_whatsapp = 'whatsapp:+14155238886'  # Your Twilio sandbox WhatsApp number
+    client = Client(account_sid, auth_token)
+    
+    client.messages.create(
+        body=message,
+        from_=from_whatsapp,
+        to=f'whatsapp:{to}'
+    )
+
+# 3. API Endpoint to Update Parcel Status & Send WhatsApp Notifications
+@app.route('/update-status', methods=['POST'])
+def update_status():
+    try:
+        data = request.json
+        tracking_id = data['tracking_id']
+        new_status = data['status']
+        
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        cursor.execute("UPDATE parcels SET status=%s WHERE tracking_id=%s", (new_status, tracking_id))
+        conn.commit()
+        
+        cursor.execute("SELECT whatsapp_number FROM parcels WHERE tracking_id=%s", (tracking_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            whatsapp = result[0]
+            message = f"Your parcel ({tracking_id}) is now '{new_status}'."
+            send_whatsapp(whatsapp, message)
+            return jsonify({"message": "Status updated and WhatsApp notification sent!"})
+        else:
+            return jsonify({"error": "Tracking ID not found."}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# 4. Home Route
+@app.route('/')
+def home():
+    return "<h2> Mamta Courier Notification System is Running!</h2>"
+
+# 5. Run the Flask App
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
